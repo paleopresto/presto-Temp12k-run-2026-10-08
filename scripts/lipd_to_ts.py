@@ -26,7 +26,8 @@ Output: proxy_ts.json -- a list of record objects, each:
     }
 
 Records kept: those in the Temp12k compilation with a temperature
-interpretation. Method-specific subsetting (degC-only for SCC/DCC; seasonality
+interpretation (--any-compilation drops the membership test, for PReSto pool
+bundles already selected by the Temperature 12k criteria). Method-specific subsetting (degC-only for SCC/DCC; seasonality
 {annual,summerOnly,winterOnly}) is applied downstream so the JSON stays a
 faithful superset.
 """
@@ -251,7 +252,7 @@ def _lookup_unc(unc_table, archive: str, proxy: str, season: str, default: float
 
 
 def build(pkl_path: Path, out_json: Path, unc_path: Path = None,
-          default_unc: float = 2.1) -> None:
+          default_unc: float = 2.1, any_compilation: bool = False) -> None:
     with pkl_path.open("rb") as f:
         raw = pickle.load(f)
 
@@ -267,7 +268,7 @@ def build(pkl_path: Path, out_json: Path, unc_path: Path = None,
     n_not_temp12k = n_not_temp = n_bad_series = 0
 
     for rec in TS:
-        if not _in_temp12k(rec):
+        if not any_compilation and not _in_temp12k(rec):
             n_not_temp12k += 1
             continue
         interp = _interp0(rec)
@@ -363,8 +364,13 @@ def main() -> None:
                     help="reference_data/proxy_uncertainties.yml (Table 2)")
     ap.add_argument("--default-unc", type=float, default=2.1,
                     help="fallback 1-sigma uncertainty (degC) when no match")
+    ap.add_argument("--any-compilation", action="store_true",
+                    help="keep temperature records whatever compilation they belong to; "
+                         "for PReSto pool bundles, which were selected upstream by the "
+                         "Temperature 12k criteria rather than by membership")
     args = ap.parse_args()
-    build(args.pickle, args.out_json, args.uncertainties, args.default_unc)
+    build(args.pickle, args.out_json, args.uncertainties, args.default_unc,
+          any_compilation=args.any_compilation)
 
 
 if __name__ == "__main__":

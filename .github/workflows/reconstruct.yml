@@ -74,6 +74,14 @@ jobs:
           curl -L -f "$PICKLE_URL" -o lipd_legacy.pkl
           ls -lh lipd_legacy.pkl
 
+      # PATH C: a pinned PReSto data pool (paleopresto/presto-recipes pools/),
+      # already selected by the Temperature 12k criteria and deduplicated.
+      - name: Fetch PReSto pool bundle
+        if: steps.pathway.outputs.mode == 'bundle'
+        uses: paleopresto/presto-recipes/.github/actions/fetch-pool@pools
+        with:
+          format: pickle
+
       # PATH B: filtered query via lipdGenerator container.
       - name: Generate LiPD data from query
         if: steps.pathway.outputs.mode == 'filtered'
@@ -180,9 +188,12 @@ jobs:
       - name: Run ${{ matrix.method }}
         run: |
           mkdir -p ./results
+          # Pool bundles are selected by criteria, not Temp12k membership.
+          ANY=0; [ "$(jq -r '.mode // empty' query_params.json 2>/dev/null)" = "bundle" ] && ANY=1
           docker run --rm \
             -e PRESTO_STAGE=methods \
             -e PRESTO_ONLY_METHOD=${{ matrix.method }} \
+            -e PRESTO_ANY_COMPILATION=$ANY \
             -v $(pwd)/lipd_legacy.pkl:/proxies/lipd_legacy.pkl:ro \
             -v $(pwd)/config/user_config.yml:/app/config/user_config.yml:ro \
             -v $(pwd)/results:/results \
