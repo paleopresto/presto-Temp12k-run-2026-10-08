@@ -28,7 +28,7 @@ presto_config:
   ncores:
     value: '2'
   nens:
-    value: '100'
+    value: '500'
   reference_period.end:
     value: '1900'
   reference_period.start:
